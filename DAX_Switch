@@ -1,0 +1,11 @@
+Меры = 
+IF(HASONEVALUE(Metrics[metrics]),SWITCH(VALUES(Metrics[metrics]),
+"Клики", SUM(Cost[Клики]),
+"Лиды",Analytics[Лиды],
+"Цена за лид",Analytics[Цена за лид],
+"Расход", Cost[Расход (окр)],
+"Посещения",SUM(Analytics[Посещения]),
+
+BLANK ()
+)
+)
