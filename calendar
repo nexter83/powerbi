@@ -1,5 +1,5 @@
 let
-    Source = #date(2017, 8, 1),
+    Source = #date(2020, 1, 1),
     ListDate = List.Dates(Source, Number.From(DateTime.LocalNow())- Number.From(Source) ,#duration(1,0,0,0)),
     #"Converted to Table" = Table.FromList(ListDate, Splitter.SplitByNothing(), null, null, ExtraValues.Error),
     #"Renamed Columns" = Table.RenameColumns(#"Converted to Table",{{"Column1", "Дата"}}),
@@ -7,23 +7,13 @@ let
     InsertDayName = Table.AddColumn(#"Inserted Day of Week", "День недели", each Date.ToText([Дата], "dddd"), type text),
     #"Inserted Week of Year" = Table.AddColumn(InsertDayName, "Номер недели", each Date.WeekOfYear([Дата]), type number),
     #"Inserted Week of Month" = Table.AddColumn(#"Inserted Week of Year", "Неделя месяца", each Date.WeekOfMonth([Дата]), type number),
-    #"Inserted Start of Week" = Table.AddColumn(#"Inserted Week of Month", "StartOfWeek", each Date.StartOfWeek([Дата]), type date),
-    #"Inserted End of Week" = Table.AddColumn(#"Inserted Start of Week", "EndOfWeek", each Date.EndOfWeek([Дата]), type date),
-    #"Inserted Quarter" = Table.AddColumn(#"Inserted End of Week", "Quarter", each Date.QuarterOfYear([Дата]), type number),
+    #"InsertedWeek" = Table.AddColumn(#"Inserted Week of Month", "Неделя", each Date.ToText(Date.StartOfWeek([Дата], Day.Monday),"dd.MM.yyyy") & " - " & Date.ToText(Date.EndOfWeek([Дата], Day.Monday),"dd.MM.yyyy")),
+    #"Inserted Quarter" = Table.AddColumn(InsertedWeek, "Quarter", each Date.QuarterOfYear([Дата]), type number),
     #"Inserted Month" = Table.AddColumn(#"Inserted Quarter", "Номер месяца", each Date.Month([Дата]), type number),
     InsertMonthName = Table.AddColumn(#"Inserted Month", "Месяц", each Date.ToText([Дата], "MMMM"), type text),
     #"Inserted Year" = Table.AddColumn(InsertMonthName, "Год", each Date.Year([Дата]), type number),
-    #"Duplicated Column" = Table.DuplicateColumn(#"Inserted Year", "Год", "Год - Copy"),
-    #"Duplicated Column1" = Table.DuplicateColumn(#"Duplicated Column", "Номер месяца", "Номер месяца - Copy"),
-    #"Merged Columns" = Table.CombineColumns(Table.TransformColumnTypes(#"Duplicated Column1", {{"Год - Copy", type text}, {"Номер месяца - Copy", type text}}, "en-US"),{"Год - Copy", "Номер месяца - Copy"},Combiner.CombineTextByDelimiter("-", QuoteStyle.None),"IndexMonth"),
-    #"Duplicated Column3" = Table.DuplicateColumn(#"Merged Columns", "Год", "Год - Copy"),
-    #"Duplicated Column2" = Table.DuplicateColumn(#"Duplicated Column3", "Номер недели", "Номер недели - Copy"),
-    #"Merged Columns1" = Table.CombineColumns(Table.TransformColumnTypes(#"Duplicated Column2", {{"Год - Copy", type text}, {"Номер недели - Copy", type text}}, "en-US"),{"Год - Copy", "Номер недели - Copy"},Combiner.CombineTextByDelimiter("-", QuoteStyle.None),"IndexWeek"),
-    #"Inserted End of Month" = Table.AddColumn(#"Merged Columns1", "EndOfMonth", each Date.EndOfMonth([Дата]), type date),
-    #"Merged Columns2" = Table.CombineColumns(Table.TransformColumnTypes(#"Inserted End of Month", {{"StartOfWeek", type text}, {"EndOfWeek", type text}}, "ru-RU"),{"StartOfWeek", "EndOfWeek"},Combiner.CombineTextByDelimiter(" - ", QuoteStyle.None),"Неделя"),
-    #"Changed Type1" = Table.TransformColumnTypes(#"Merged Columns2",{{"EndOfMonth", type text}, {"Дата", type text}}),
-    #"Run R Script" = R.Execute("# 'dataset' holds the input data for this script#(lf)library(stringr)#(lf)dataset$IndexWeek <- as.character(dataset$IndexWeek)#(lf)dataset$IndexMonth <- as.character(dataset$IndexMonth )#(lf)dataset$IndexWeek <- ifelse(nchar(dataset$IndexWeek) == 6, gsub(x = dataset$IndexWeek,pattern = ""-"",replacement = ""-0""),dataset$IndexWeek)#(lf)dataset$IndexMonth <- ifelse(nchar(dataset$IndexMonth) == 6, gsub(x = dataset$IndexMonth,pattern = ""-"",replacement = ""-0""),dataset$IndexMonth)#(lf)output <- dataset",[dataset=#"Changed Type1"]),
-    #"""output""" = #"Run R Script"{[Name="output"]}[Value],
-    #"Changed Type" = Table.TransformColumnTypes(#"""output""",{{"Дата", type date}, {"EndOfMonth", type date}})
+    #"Inserted indexMonth" = Table.AddColumn(#"Inserted Year", "IndexMonth", each Number.ToText(Date.Year([Дата])) & "-" & Number.ToText(Date.Month([Дата]))),
+    #"Inserted indexWeek" = Table.AddColumn(#"Inserted Year", "IndexWeek", each Number.ToText(Date.Year([Дата])) & "-" & Text.PadStart(Number.ToText(Date.WeekOfYear([Дата], Day.Monday)),2,"0")),    
+    #"Inserted End of Month" = Table.AddColumn(#"Inserted indexWeek", "EndOfMonth", each Date.EndOfMonth([Дата]), type date)
 in
-    #"Changed Type"
+    #"Inserted End of Month"
